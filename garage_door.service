@@ -1,0 +1,17 @@
+[Unit]
+Description=monitor garage door position
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+ExecStart=/home/hbarta/bin/do_new_garage.sh
+
+[Install]
+WantedBy=multi-user.target
+
+# Place in ~/.config/systemd/user/
+# systemctl --user daemon-reload
+# systemctl --user status garage_door
+# systemctl --user start garage_door
+# systemctl --user enable garage_door
+# reboot?
