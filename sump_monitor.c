@@ -140,8 +140,8 @@ int main(int argc, char **argv)
                     {
                         finish = event.ts;
                         float pulse_width = ((float)(finish.tv_nsec - start.tv_nsec) / 1000000000) + (finish.tv_sec - start.tv_sec);
-                        // readings[reading_count] = pulse_width * 1100 * 12 / 2.0; // distance in inches based on 1100 fps in air
-                        readings[reading_count] = pulse_width * 34300 / 2.0; // distance in cm based on 343 m/s in air
+                        readings[reading_count] = pulse_width * 1100 * 12 / 2.0; // distance in inches based on 1100 fps in air
+                        //readings[reading_count] = pulse_width * 34300 / 2.0; // distance in cm based on 343 m/s in air
                         if (debug_lvl > 0)
                             printf("%f, %d, %f\n", pulse_width, reading_count, readings[reading_count]);
                         start.tv_sec = 0; // zero our for next reading
