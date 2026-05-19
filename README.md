@@ -1,5 +1,9 @@
 # sump monitor using HC-SR04 ultrasonic sensor
 
+## Important version information
+
+This branch of the project will build and run on Debian/RPiOS Bookworm. It uses the V1.6 version opf the Libgpiod library. Trixie ships V2.2 of the library which is not backward compatible. This branch will not build or rin on Trixie.
+
 This project uses the `garage-door` (private) project as a starting point in order to leverage existing code. The function will be to read the distance from a suitably mounted sensor to water surface and publish the values to an MQTT broker by piping JSON formatted results to `mosquitto_pub`. The task is intended to be run periodically from a `cron` job.
 
 ## Motivation
