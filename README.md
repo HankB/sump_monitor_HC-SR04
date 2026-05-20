@@ -1,6 +1,6 @@
 # sump monitor using HC-SR04 ultrasonic sensor
 
-Read an HC-SR04 susp[ended above a sump to determine water level in the sump. (It actually reads distance form sensor to water.)
+Read an HC-SR04 suspended above a sump to determine water level in the sump. (It actually reads distance form sensor to water.)
 
 ## Important version information
 
@@ -22,7 +22,9 @@ Use an HC-SR04 to measure distance with a minimum of computer resources (targete
 
 ## Plan
 
-Rewrite sump_monitor using the libgpiod C++ bindings which have been found to be easier to use than the C bindings.
+Rewrite sump_monitor using the libgpiod C++ bindings which have been found to be easier to use than the C bindings. I already have code that uses the V2.2 GPIOD library at <https://github.com/HankB/event-driven-HC-SR04> and will use that as a starting point.
+
+Regarding MQTT, this application will run, collect readings, publish, exit. There is not a compelling need to include support for MQTT so that will be delegated to `mosquitto_pub`. This program will write the (JSON formatted) payload to STDOUT which will them be piped to `mosquitto_pub` which will publish.
 
 ## Status
 
@@ -39,7 +41,7 @@ S/W is targeted for a Pi Zero W and development is performed on a Pi 3B with the
 |yellow|trigger|16|24|
 |red|VCC|4|
 
-Color codes are relative to the DuPont jumpers I used. The resistor divider is 1.5K Echo to orange and 3K orange to ground.
+Color codes are relative to the DuPont jumpers I used. The resistor divider is 1.5K Echo pin to orange and 3K orange to ground.
 
 ## Device details
 
