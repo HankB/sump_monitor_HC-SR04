@@ -13,6 +13,13 @@ Use an HC-SR04 to measure distance with a minimum of computer resources (targete
 
 * <https://www.handsontec.com/dataspecs/HC-SR04-Ultrasonic.pdf> user guide.
 
+## References
+
+* <https://eclipse.dev/paho/files/cppdoc/index.html> Paho MQTT C++ Documentation
+* <https://libgpiod.readthedocs.io/en/master/> libgpiod documentation
+* <https://libgpiod.readthedocs.io/en/master/cpp_api.html> libgpiod C++ bindings API
+* <https://github.com/brgl/libgpiod/tree/master/bindings/cxx/examples> C++ examples
+
 ## Plan
 
 Rewrite sump_monitor using the libgpiod C++ bindings which have been found to be easier to use than the C bindings.
