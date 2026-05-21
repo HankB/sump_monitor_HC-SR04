@@ -13,6 +13,7 @@ using namespace std;
 #include <chrono>
 #include <vector>
 #include <algorithm>
+#include <ranges>
 
 namespace
 {
@@ -69,7 +70,7 @@ namespace
 int main(int argc, char **argv)
 {
     if (debug_lvl > 1)
-        cout << "GPIOD version " << gpiod::api_version() << endl;
+        cerr << "GPIOD version " << gpiod::api_version() << endl;
 
     // chip object
 
@@ -81,25 +82,22 @@ int main(int argc, char **argv)
     }
     else if (debug_lvl > 1)
     {
-
-        cout << "chip is constructed and useable" << endl;
+        cerr << "chip is constructed and usable" << endl;
     }
     if (debug_lvl > 1)
     {
         gpiod::chip_info info = chip.get_info();
-        cout << "name:" << info.name() << " label:" << info.label() << endl;
+        cerr << "name:" << info.name() << " label:" << info.label() << endl;
     }
 
     gpiod::edge_event_buffer events;
     if (debug_lvl > 1)
     {
-        cout << "empty buffer holds " << events.num_events() << " events"
+        cerr << "empty buffer holds " << events.num_events() << " events"
              << " and has a capacity of " << events.capacity() << endl;
     }
-    // input processing from the GPIOD example follow_input.cpp
-    // but probably don;t need the pullup and only interest is
-    // the rising input.
 
+    // input processing from the GPIOD example follow_input.cpp
     auto echo_request =
         chip.prepare_request()
             .set_consumer(consumer)
@@ -108,13 +106,11 @@ int main(int argc, char **argv)
                 ::gpiod::line_settings()
                     .set_direction(
                         ::gpiod::line::direction::INPUT)
-                    //                    .set_bias(
-                    //                        ::gpiod::line::bias::PULL_UP)
                     .set_edge_detection(
                         ::gpiod::line::edge::BOTH))
             .do_request();
-    // output processing copied substantially from toggle_line_value.cpp
 
+    // output processing copied substantially from toggle_line_value.cpp
     auto output_request =
         ::gpiod::chip(chip_path)
             .prepare_request()
@@ -128,12 +124,10 @@ int main(int argc, char **argv)
     // initialize the trigger to low
     output_request.set_value(trigger_line_offset, ::gpiod::line::value::INACTIVE);
 
-    if (debug_lvl > 0)
-        cerr << "pulse width, distance inches" << endl;
-
-    size_t reading_count = 0;
-    bool need_pulse = true;
-    auto readings_needed = size_t{5};
+    size_t reading_count = 0;         // track readings captured
+    bool need_pulse = true;           // manage state of reading
+    auto readings_needed = size_t{5}; // number of readings to capture
+    auto missed_start_count = 0;      // count times we miss the strat of the echo
 
     while (reading_count < readings_needed)
     {
@@ -144,7 +138,7 @@ int main(int argc, char **argv)
 
             need_pulse = false;
             if (debug_lvl > 1)
-                cout << "\t\t\tpulse rdback (before, during, after) " << before_pulse << ", "
+                cerr << "\t\t\tpulse rdback (before, during, after) " << before_pulse << ", "
                      << during_pulse << ", " << after_pulse << endl;
         }
         wait_start_ts = chrono::high_resolution_clock::now().time_since_epoch();
@@ -169,17 +163,17 @@ int main(int argc, char **argv)
         wait_complete_ts = chrono::high_resolution_clock::now().time_since_epoch();
         if (debug_lvl > 2)
         {
-            cout << "\t\t\t";
+            cerr << "\t\t\t";
             for (size_t i = 0; i < reading_size; i++)
             {
-                cout << readings[i] << " ";
+                cerr << readings[i] << " ";
             }
-            cout << endl;
+            cerr << endl;
         }
         if (debug_lvl > 1)
         {
-            cout << "\t\t\twait rdback (before, after) " << before_wait << " " << after_wait << endl;
-            cout << "\t\t\twait_edge_events() have_events:" << have_events << " start-send "
+            cerr << "\t\t\twait rdback (before, after) " << before_wait << " " << after_wait << endl;
+            cerr << "\t\t\twait_edge_events() have_events:" << have_events << " start-send "
                  << wait_start_ts.count() - pulse_send_ts.count() << " wait-send "
                  << wait_complete_ts.count() - pulse_send_ts.count() << endl;
         }
@@ -195,9 +189,8 @@ int main(int argc, char **argv)
 
             for (const auto &event : events)
             {
-
                 if (debug_lvl > 1)
-                    ::cout << event << ::endl;
+                    cerr << event << ::endl;
 
                 switch (event.type())
                 {
@@ -208,25 +201,22 @@ int main(int argc, char **argv)
                     if (start != 0) // if we didn't miss the start of the pulse
                     {
                         finish = event.timestamp_ns();
-                        auto raw = finish - start;
                         float pulse_width = ((float)(finish - start) / 1000000000);
                         float distance = pulse_width * 1100 * 12 / 2.0; // distance in inches based on 1100 fps in air
                         if (debug_lvl > 1)
-                            cout << "readings: ";
-                        cout << "                     " << (finish - start)
-                             << ", " << raw
-                             << ", " << pulse_width
-                             << ", " << distance << endl;
+                            cerr << "        " << (finish - start)
+                                 << ", " << pulse_width
+                                 << ", " << distance << endl;
                         distance_readings.push_back(distance);
-                        cout << "                     pushing: " << (distance) << endl;
 
                         start = 0; // zero our indicator for next reading
                         reading_count++;
-                        // this_thread::sleep_for(std::chrono::seconds(1));
+                        // this_thread::sleep_for(std::chrono::seconds(1)); seems not to be needed
                     }
                     else
                     {
-                        cout << "missed the start" << endl;
+                        cerr << "missed the start" << endl;
+                        missed_start_count++;
                     }
                     need_pulse = true;
                     break;
@@ -240,12 +230,39 @@ int main(int argc, char **argv)
     nth_element(distance_readings.begin(), distance_readings.begin() + readings_needed / 2, distance_readings.end());
     auto median_distance = distance_readings[readings_needed / 2];
 
-    cout << " distance: " << median_distance
-         << " of : " << distance_readings.size() << endl;
-    for (const auto &reading : distance_readings)
+    if (debug_lvl > 0)
+        cerr << " distance: " << median_distance
+             << " of : " << distance_readings.size()
+             << " missed starts: " << missed_start_count << endl;
+    if (debug_lvl > 1)
     {
-        std::cout << reading << " ";
+
+        for (const auto &reading : distance_readings)
+        {
+            cerr << reading << " ";
+        }
+        cerr << endl;
     }
-    cout << endl;
+
+    /*
+    Present topic + payload looks like:
+
+    HA/arae/basement/sump_level {"t":1779395042, "depth":16.2, "sensor":"HC-SR04"}
+
+    Topic handled external to this program. Adding "count" for number of readings captured and
+    "missed_start" for count of missed starts. And the array of readings.
+    */
+    cout << "{\"t\":" << time(nullptr)
+         << ", \"distance\":" << median_distance
+         << ", \"sensor\": \"HC-SR04\""
+         << ", \"count\":" << distance_readings.size()
+         << ", \"missed\":" << missed_start_count
+         << ", \"readings\":[";
+    for (size_t i = 0; i < distance_readings.size(); ++i)
+    {
+        cout << distance_readings[i];
+        if (i < distance_readings.size() - 1)
+            cout << ", ";
+    }
+    cout << "]}" << endl;
 }
-// (raw_readings[readings_needed / 2])
