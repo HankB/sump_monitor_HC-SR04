@@ -75,3 +75,12 @@ sump_monitor | mosquitto_pub -h mqtt -l -t "HA/brandywine/garage/door_test"
 * `libgpiod` was selected over WiringPi because `libgpiod` provides timestamped transitions that eliminate the need to poll the echo GPIO. 
 
 * The existing Python installation uses GPIO23 for the trigger and GPIO24 to read the echo and reports the distance in CM. This code will be modified to do the same to facilitate easy comparisons and make it a drop in replacement. This change results in roughly comparable measurements except that the C version produces far fewer bogus values. (But is not completely immune - `"readings":[35.7, 35.7, 35.6, 35.7, 181.0]`)
+
+* The `-Wno-psabi` is used to compile to suppress an apparently harmless warning that results in a couple hundred lines of output starting with:
+
+```text
+time_t_warn.cpp: In function ‘int main(int, char**)’:
+time_t_warn.cpp:23:16: note: parameter passing for argument of type ‘__gnu_cxx::__normal_iterator<long long int*, std::vector<long long int> >’ changed in GCC 7.1
+   23 |     nth_element(raw_readings.begin(), raw_readings.begin() + readings_needed / 2, raw_readings.end());
+      |     ~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+```
