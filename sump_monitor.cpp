@@ -3,8 +3,7 @@
 
 /*
 Build
-g++ -Wall -o hcsr04_distance hcsr04_distance.cpp -lgpiodcxx
-g++ -Wall -c hcsr04_distance.cpp
+g++ -Wno-psabi -Wall -o sump_monitor sump_monitor.cpp -lgpiodcxx
 */
 
 #include <iostream>
@@ -12,6 +11,8 @@ using namespace std;
 #include <gpiod.hpp>
 #include <thread>
 #include <chrono>
+#include <vector>
+#include <algorithm>
 
 namespace
 {
@@ -61,6 +62,7 @@ namespace
             return "Unknown";
         }
     }
+    std::vector<float> distance_readings;
 
 } /* namespace */
 
@@ -129,9 +131,11 @@ int main(int argc, char **argv)
     if (debug_lvl > 0)
         cerr << "pulse width, distance inches" << endl;
 
-    int reading_count = 0;
+    size_t reading_count = 0;
     bool need_pulse = true;
-    while (reading_count < 50)
+    auto readings_needed = size_t{5};
+
+    while (reading_count < readings_needed)
     {
         if (need_pulse)
         {
@@ -150,8 +154,6 @@ int main(int argc, char **argv)
         gpiod::line::value readings[reading_size];
         constexpr size_t reading_delay = 100;
 
-        // timeout in nano-seconds
-        //auto timeout = ::chrono::nanoseconds(1000000000L);
         auto timeout = ::chrono::milliseconds(100L);
 
         if (debug_lvl > 2)
@@ -176,7 +178,6 @@ int main(int argc, char **argv)
         }
         if (debug_lvl > 1)
         {
-            // auto delta = wait_start_ts - pulse_send_ts;
             cout << "\t\t\twait rdback (before, after) " << before_wait << " " << after_wait << endl;
             cout << "\t\t\twait_edge_events() have_events:" << have_events << " start-send "
                  << wait_start_ts.count() - pulse_send_ts.count() << " wait-send "
@@ -207,14 +208,21 @@ int main(int argc, char **argv)
                     if (start != 0) // if we didn't miss the start of the pulse
                     {
                         finish = event.timestamp_ns();
+                        auto raw = finish - start;
                         float pulse_width = ((float)(finish - start) / 1000000000);
                         float distance = pulse_width * 1100 * 12 / 2.0; // distance in inches based on 1100 fps in air
                         if (debug_lvl > 1)
                             cout << "readings: ";
-                        cout << pulse_width << ", " << distance << endl;
+                        cout << "                     " << (finish - start)
+                             << ", " << raw
+                             << ", " << pulse_width
+                             << ", " << distance << endl;
+                        distance_readings.push_back(distance);
+                        cout << "                     pushing: " << (distance) << endl;
+
                         start = 0; // zero our indicator for next reading
                         reading_count++;
-                        //this_thread::sleep_for(std::chrono::seconds(1));
+                        // this_thread::sleep_for(std::chrono::seconds(1));
                     }
                     else
                     {
@@ -229,4 +237,15 @@ int main(int argc, char **argv)
             }
         }
     }
+    nth_element(distance_readings.begin(), distance_readings.begin() + readings_needed / 2, distance_readings.end());
+    auto median_distance = distance_readings[readings_needed / 2];
+
+    cout << " distance: " << median_distance
+         << " of : " << distance_readings.size() << endl;
+    for (const auto &reading : distance_readings)
+    {
+        std::cout << reading << " ";
+    }
+    cout << endl;
 }
+// (raw_readings[readings_needed / 2])
