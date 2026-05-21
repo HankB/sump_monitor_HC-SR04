@@ -28,6 +28,7 @@ Regarding MQTT, this application will run, collect readings, publish, exit. Ther
 
 ## Status
 
+* 2026-05-21 Complete - working as desired
 * 2026-05-19 Start work on Libgpiod V2.2 (Trixie) version of the project.
 
 ## H/W configuration
@@ -66,8 +67,10 @@ gcc -Wall -o sump_monitor sump_monitor.c  -l gpiod
 
 ## Usage
 
+Example:
+
 ```text
-sump_monitor | mosquitto_pub -h mqtt -l -t "HA/brandywine/garage/door_test"
+sump_monitor | mosquitto_pub -h mqtt -l -t "HA/arae/basement/sump_level"
 ```
 
 ## Errata
