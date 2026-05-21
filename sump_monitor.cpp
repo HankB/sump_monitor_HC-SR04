@@ -264,5 +264,5 @@ int main(int argc, char **argv)
         if (i < distance_readings.size() - 1)
             cout << ", ";
     }
-    cout << "]}" << endl;
+    cout << "]}" << flush;
 }
